@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102e28" />
+    <title>Palash Bridge · Project files</title>
+    <style>
+      :root { --ink:#173e35; --muted:#789186; --cream:#f7f5ef; --paper:#fffefa; --line:#e1e7dd; --green:#1f6c51; --orange:#f07d3e; --code:#18352e; }
+      * { box-sizing:border-box; }
+      body { margin:0; color:var(--ink); background:var(--cream); font-family:Arial, sans-serif; }
+      .shell { max-width:1500px; margin:0 auto; padding:28px 34px 38px; }
+      header { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:28px; }
+      .brand { display:flex; align-items:center; gap:11px; color:var(--ink); text-decoration:none; }
+      .mark { width:40px; height:40px; display:grid; place-items:center; border-radius:11px 11px 11px 3px; color:#eaf3dd; background:var(--green); font-size:21px; }
+      .brand strong { display:block; font-size:13px; letter-spacing:.11em; }.brand small { display:block; color:#81968b; font-size:10px; margin-top:3px; }
+      .back { padding:9px 13px; border:1px solid var(--line); border-radius:7px; color:var(--green); background:var(--paper); text-decoration:none; font-size:11px; font-weight:700; }
+      .back:hover { border-color:#b8d1bc; background:#f2f8f0; }
+      .eyebrow { color:var(--orange); text-transform:uppercase; letter-spacing:.13em; font-size:10px; font-weight:bold; }.dot { display:inline-block; width:6px; height:6px; margin-right:7px; border-radius:50%; background:var(--orange); }
+      h1 { margin:9px 0 7px; font:600 34px Georgia, serif; letter-spacing:-.035em; } header + .intro p { margin:0; color:var(--muted); font-size:12px; line-height:1.5; }
+      .lanes { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:15px; margin-top:24px; }
+      .lane { overflow:hidden; border:1px solid var(--line); border-radius:12px; background:var(--paper); box-shadow:0 6px 20px #244c3c08; }
+      .lane-head { display:flex; align-items:center; justify-content:space-between; padding:14px 15px; border-bottom:1px solid var(--line); }
+      .file-name { display:flex; align-items:center; gap:9px; font-size:12px; font-weight:700; }.file-icon { width:23px; height:27px; display:grid; place-items:center; color:var(--green); background:#e7f2e6; border-radius:4px; font-size:8px; font-weight:800; }
+      .file-type { color:#a3b1a9; font-size:9px; text-transform:uppercase; letter-spacing:.1em; }
+      pre { height:calc(100vh - 245px); min-height:440px; overflow:auto; margin:0; padding:16px; color:#d9e9db; background:var(--code); font:11px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; tab-size:2; white-space:pre; }
+      .status { margin-top:15px; color:#7c9185; font-size:10px; }.status b { color:var(--green); }
+      @media (max-width:900px) { .shell { padding:22px 16px 28px; }.lanes { grid-template-columns:1fr; }.lane pre { height:350px; min-height:0; } header { align-items:flex-start; } }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <a href="/" class="brand"><span class="mark">⌁</span><span><strong>PALASH BRIDGE</strong><small>Mother-tongue learning, made possible</small></span></a>
+        <a href="/" class="back">← Back to app</a>
+      </header>
+      <section class="intro">
+        <span class="eyebrow"><span class="dot"></span> Project files</span>
+        <h1>Everything that powers the prototype.</h1>
+        <p>These are the three authored files used to build the running Hindi ↔ Santhali app, shown side by side for quick review.</p>
+      </section>
+      <div class="lanes">
+        <section class="lane"><div class="lane-head"><span class="file-name"><span class="file-icon">HTML</span> index.html</span><span class="file-type">structure</span></div><pre id="html-code">Loading…</pre></section>
+        <section class="lane"><div class="lane-head"><span class="file-name"><span class="file-icon">CSS</span> styles.css</span><span class="file-type">visuals</span></div><pre id="css-code">Loading…</pre></section>
+        <section class="lane"><div class="lane-head"><span class="file-name"><span class="file-icon">JS</span> app.js</span><span class="file-type">behavior</span></div><pre id="js-code">Loading…</pre></section>
+      </div>
+      <p class="status"><b>Local files</b> · Served by the same offline-friendly preview workflow.</p>
+    </div>
+    <script>
+      Promise.all([
+        ["html-code", "index.html"],
+        ["css-code", "styles.css"],
+        ["js-code", "app.js"]
+      ].map(async ([id, file]) => {
+        const response = await fetch(file);
+        document.getElementById(id).textContent = await response.text();
+      })).catch(() => {
+        document.querySelectorAll("pre").forEach((node) => node.textContent = "Unable to load this file in the preview.");
+      });
+    </script>
+  </body>
+</html>
