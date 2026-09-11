@@ -63,6 +63,9 @@ const charCount = document.querySelector("#charCount");
 const confidence = document.querySelector("#confidence");
 const speakButton = document.querySelector("#speakButton");
 const toast = document.querySelector("#toast");
+let translationRequestId = 0;
+let remoteController = null;
+let remoteTimer = null;
 
 function normalize(value) {
   return value.toLowerCase().replace(/[।！？!?.,،]/g, "").replace(/\s+/g, " ").trim();
@@ -73,12 +76,12 @@ function getPairForCurrentDirection() {
     ? { source: pair.hindi, target: pair.santhali } : { source: pair.santhali, target: pair.hindi });
 }
 
-function translate(value) {
+function getLocalTranslation(value) {
   const clean = normalize(value);
-  if (!clean) return "";
+  if (!clean) return { text: "", exact: false, status: "Waiting for input" };
   const pairs = getPairForCurrentDirection();
   const exact = pairs.find((pair) => normalize(pair.source) === clean);
-  if (exact) return exact.target;
+  if (exact) return { text: exact.target, exact: true, status: "Phrase match · local" };
   const partial = pairs
     .filter((pair) => clean.includes(normalize(pair.source)) && normalize(pair.source).length > 1)
     .sort((a, b) => normalize(b.source).length - normalize(a.source).length);
@@ -87,14 +90,40 @@ function translate(value) {
     partial.forEach((pair) => {
       result = result.replace(new RegExp(escapeRegExp(pair.source), "gi"), pair.target);
     });
-    return result;
   }
-  wordPairs.forEach(([left, right]) => {
-    const from = sourceLanguage === "hindi" ? left : right;
-    const to = sourceLanguage === "hindi" ? right : left;
-    result = result.replace(new RegExp(escapeRegExp(from), "g"), to);
+  if (result === value) {
+    wordPairs.forEach(([left, right]) => {
+      const from = sourceLanguage === "hindi" ? left : right;
+      const to = sourceLanguage === "hindi" ? right : left;
+      result = result.replace(new RegExp(escapeRegExp(from), "g"), to);
+    });
+  }
+  return result === value
+    ? { text: "", exact: false, status: "Finding a dynamic translation…" }
+    : { text: result, exact: false, status: "Local word match · checking online" };
+}
+
+async function getDynamicTranslation(value, signal) {
+  const source = sourceLanguage === "hindi" ? "hi" : "sat";
+  const target = sourceLanguage === "hindi" ? "sat" : "hi";
+  const query = new URLSearchParams({
+    client: "gtx",
+    sl: source,
+    tl: target,
+    dt: "t",
+    q: value,
   });
-  return result === value ? `⌁ ${value}` : result;
+  const response = await fetch(`https://translate.googleapis.com/translate_a/single?${query}`, {
+    signal,
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error(`Translation request failed (${response.status})`);
+  const data = await response.json();
+  const text = Array.isArray(data?.[0])
+    ? data[0].map((segment) => segment?.[0] || "").join("")
+    : "";
+  if (!text.trim()) throw new Error("No translation returned");
+  return text;
 }
 
 function escapeRegExp(value) {
@@ -105,12 +134,54 @@ function updateTranslation(addToHistory = true) {
   const value = sourceText.value.slice(0, 240);
   sourceText.value = value;
   charCount.textContent = `${value.length} / 240`;
-  const result = translate(value);
-  outputText.innerHTML = result ? escapeHtml(result) : '<span class="output-placeholder">Your translation will appear here</span>';
-  speakButton.disabled = !result;
-  confidence.classList.toggle("ready", Boolean(result));
-  confidence.innerHTML = result ? "<i></i> Phrase match · local" : "<i></i> Waiting for input";
-  if (result && addToHistory) addHistory(value, result);
+  const requestId = ++translationRequestId;
+  if (remoteController) remoteController.abort();
+  window.clearTimeout(remoteTimer);
+  const local = getLocalTranslation(value);
+
+  if (!value) {
+    outputText.innerHTML = '<span class="output-placeholder">Your translation will appear here</span>';
+    speakButton.disabled = true;
+    confidence.classList.remove("ready");
+    confidence.innerHTML = "<i></i> Waiting for input";
+    return;
+  }
+
+  if (local.text) {
+    outputText.innerHTML = escapeHtml(local.text);
+    speakButton.disabled = false;
+    confidence.classList.toggle("ready", local.exact);
+    confidence.innerHTML = `<i></i> ${local.status}`;
+    if (local.exact && addToHistory) addHistory(value, local.text);
+  } else {
+    outputText.innerHTML = '<span class="output-placeholder">Translating any words online…</span>';
+    speakButton.disabled = true;
+    confidence.classList.remove("ready");
+    confidence.innerHTML = "<i></i> Dynamic translation · online";
+  }
+
+  if (local.exact) return;
+
+  remoteTimer = window.setTimeout(async () => {
+    remoteController = new AbortController();
+    try {
+      const result = await getDynamicTranslation(value, remoteController.signal);
+      if (requestId !== translationRequestId) return;
+      outputText.innerHTML = escapeHtml(result);
+      speakButton.disabled = false;
+      confidence.classList.add("ready");
+      confidence.innerHTML = "<i></i> Dynamic translation · online";
+      if (addToHistory) addHistory(value, result);
+    } catch (error) {
+      if (error.name === "AbortError" || requestId !== translationRequestId) return;
+      const fallback = local.text || value;
+      outputText.innerHTML = escapeHtml(fallback);
+      speakButton.disabled = Boolean(fallback);
+      confidence.classList.toggle("ready", Boolean(local.text));
+      confidence.innerHTML = `<i></i> ${local.text ? "Offline word match · network unavailable" : "No network · phrase library only"}`;
+      if (addToHistory && local.text) addHistory(value, local.text);
+    }
+  }, 420);
 }
 
 function escapeHtml(value) {

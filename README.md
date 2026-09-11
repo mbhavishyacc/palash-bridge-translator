@@ -4,7 +4,8 @@ An offline-friendly classroom translation prototype inspired by Jharkhand's PALA
 
 ## Included
 
-- Hindi ↔ Santhali translation with a bundled phrase library
+- Hindi ↔ Santhali translation with a bundled offline phrase library
+- Dynamic online translation for words and sentences outside the starter library
 - Ol Chiki Santhali output
 - Word-level fallback matching for prototype exploration
 - Browser speech input and playback hooks
@@ -24,4 +25,4 @@ Then open `http://localhost:5000`.
 
 ## Prototype note
 
-The translation engine is a local phrasebook prototype, not a production machine translation model. A reviewed Santhali classroom corpus or on-device NLP model should be added before classroom deployment.
+The local phrasebook keeps common classroom phrases available offline. When connected, the app can translate words and sentences outside that starter library through the dynamic translation path. A reviewed Santhali classroom corpus or on-device NLP model should still be added before classroom deployment.
